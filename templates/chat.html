@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat basado en IP</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.4/socket.io.js"></script>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <h1>Chat por IP</h1>
+        </div>
+        <div class="chat-messages" id="chat-messages"></div>
+        <div class="chat-footer">
+            <input type="text" id="message" placeholder="Escribe un mensaje..." required>
+            <button id="send-btn">Enviar</button>
+        </div>
+    </div>
+    <script>
+        const socket = io();
+        const messageInput = document.getElementById('message');
+        const chatMessages = document.getElementById('chat-messages');
+        const sendBtn = document.getElementById('send-btn');
+
+        sendBtn.addEventListener('click', () => {
+            const message = messageInput.value.trim();
+            if (message) {
+                socket.emit('send_message', { message });
+                messageInput.value = '';
+            }
+        });
+
+        socket.on('receive_message', (data) => {
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('message');
+            const isMyMessage = data.user_ip === '{{ request.remote_addr }}'; // Comparar IP del cliente actual
+            if (isMyMessage) {
+                messageDiv.classList.add('my-message');
+            } else {
+                messageDiv.classList.add('other-message');
+            }
+            messageDiv.innerHTML = `
+                <span class="message-username">${data.user_ip}</span>
+                <span class="message-time">${data.time}</span>
+                <p class="message-text">${data.message}</p>
+            `;
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        });
+    </script>
+</body>
+</html>
